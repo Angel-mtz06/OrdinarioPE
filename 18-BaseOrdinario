@@ -1,0 +1,62 @@
+CREATE DATABASE IF NOT EXISTS AgenciaAlquiler;
+USE AgenciaAlquiler;
+
+-- Tabla Clientes
+CREATE TABLE Clientes (
+    ID_Clientes INT PRIMARY KEY AUTO_INCREMENT,
+    Nombre VARCHAR(50),
+    Apellido VARCHAR(50)
+);
+
+-- Tabla Agencia
+CREATE TABLE Agencia (
+    ID_Agencia INT PRIMARY KEY AUTO_INCREMENT,
+    NombreA VARCHAR(50),
+    DireccionA VARCHAR(100)
+);
+
+-- Tabla Garaje
+CREATE TABLE Garaje (
+    ID_Garaje INT PRIMARY KEY AUTO_INCREMENT,
+    NombreG VARCHAR(50),
+    DireccionG VARCHAR(100)
+);
+
+-- Tabla Coche
+CREATE TABLE Coche (
+    Matricula VARCHAR(10) PRIMARY KEY,
+    Modelo VARCHAR(50),
+    Gasolina VARCHAR(20),
+    Color VARCHAR(30),
+    Marca VARCHAR(50),
+    Precio DECIMAL(10,2),
+    ID_Garaje INT,
+    FOREIGN KEY (ID_Garaje) REFERENCES Garaje(ID_Garaje)
+        ON DELETE SET NULL
+);
+
+-- Tabla Reserva
+CREATE TABLE Reserva (
+    ID_Reserva INT PRIMARY KEY AUTO_INCREMENT,
+    FechaIn DATE,
+    FechaFin DATE,
+    PrecioTotal DECIMAL(10,2),
+    Estado ENUM('pendiente', 'entregado'),
+    ID_Clientes INT,
+    ID_Agencia INT,
+    FOREIGN KEY (ID_Clientes) REFERENCES Clientes(ID_Clientes)
+        ON DELETE CASCADE,
+    FOREIGN KEY (ID_Agencia) REFERENCES Agencia(ID_Agencia)
+        ON DELETE SET NULL
+);
+
+-- Tabla intermedia Reserva-Coche (relación M:N)
+CREATE TABLE Incluye (
+    ID_Reserva INT,
+    Matricula VARCHAR(10),
+    PRIMARY KEY (ID_Reserva, Matricula),
+    FOREIGN KEY (ID_Reserva) REFERENCES Reserva(ID_Reserva)
+        ON DELETE CASCADE,
+    FOREIGN KEY (Matricula) REFERENCES Coche(Matricula)
+        ON DELETE CASCADE
+);
