@@ -164,16 +164,21 @@ void agregarGaraje() {
     else
         printf("Error al agregar garaje: %s\n", mysql_error(conn));
 }
-
 void entregarCoche() {
     int id_reserva;
+    int gasolinaRestante;
+
     printf("ID de la reserva a entregar (se eliminará): ");
     scanf("%d", &id_reserva);
     limpiarBuffer();
 
-    // Primero verificamos que la reserva exista
+    // Verificar que la reserva exista y obtener matrícula del coche asociado
     char queryVerifica[256];
-    snprintf(queryVerifica, sizeof(queryVerifica), "SELECT Estado FROM Reserva WHERE ID_Reserva = %d", id_reserva);
+    snprintf(queryVerifica, sizeof(queryVerifica),
+             "SELECT I.Matricula FROM Reserva R "
+             "JOIN Incluye I ON R.ID_Reserva = I.ID_Reserva "
+             "WHERE R.ID_Reserva = %d", id_reserva);
+
     if (mysql_query(conn, queryVerifica) != 0) {
         printf("Error al verificar reserva: %s\n", mysql_error(conn));
         return;
@@ -187,14 +192,33 @@ void entregarCoche() {
     }
 
     row = mysql_fetch_row(res);
-    if (strcmp(row[0], "entregado") == 0) {
-        printf("La reserva ya está marcada como entregada.\n");
-        mysql_free_result(res);
-        return;
-    }
+    char matricula[11];
+    strncpy(matricula, row[0], 10);
+    matricula[10] = '\0';
     mysql_free_result(res);
 
-    // Eliminamos la reserva (automáticamente se elimina de Incluye gracias al ON DELETE CASCADE)
+    // Preguntar cuánto gasolina queda (0-100)
+    do {
+        printf("Ingrese nivel de gasolina restante en el coche (0-100): ");
+        scanf("%d", &gasolinaRestante);
+        limpiarBuffer();
+        if (gasolinaRestante < 0 || gasolinaRestante > 100) {
+            printf("Valor inválido. Debe estar entre 0 y 100.\n");
+        }
+    } while (gasolinaRestante < 0 || gasolinaRestante > 100);
+
+    // Actualizar gasolina en tabla Coche para esa matrícula
+    char queryUpdateGas[256];
+    snprintf(queryUpdateGas, sizeof(queryUpdateGas),
+             "UPDATE Coche SET Gasolina = %d WHERE Matricula = '%s'",
+             gasolinaRestante, matricula);
+
+    if (mysql_query(conn, queryUpdateGas) != 0) {
+        printf("Error al actualizar gasolina: %s\n", mysql_error(conn));
+        return;
+    }
+
+    // Eliminar la reserva (suponiendo que ya se entregó)
     char queryDelete[256];
     snprintf(queryDelete, sizeof(queryDelete), "DELETE FROM Reserva WHERE ID_Reserva = %d", id_reserva);
 
