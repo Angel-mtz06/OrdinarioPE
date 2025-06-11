@@ -312,6 +312,49 @@ void mostrarTabla() {
 
     mysql_free_result(res);
 }
+void mostrarReservasConJoin() {
+    printf("\nReservas con datos completos (JOIN entre Reserva, Clientes, Agencia y Coche):\n");
+
+    const char *query =
+        "SELECT R.ID_Reserva, R.FechaIn, R.FechaFin, R.Estado, "
+        "C.Nombre, C.Apellido, A.NombreA, Co.Matricula, Co.Modelo "
+        "FROM Reserva R "
+        "INNER JOIN Clientes C ON R.ID_Clientes = C.ID_Clientes "
+        "INNER JOIN Agencia A ON R.ID_Agencia = A.ID_Agencia "
+        "INNER JOIN Incluye I ON R.ID_Reserva = I.ID_Reserva "
+        "INNER JOIN Coche Co ON I.Matricula = Co.Matricula";
+
+    if (mysql_query(conn, query) != 0) {
+        printf("Error al ejecutar el JOIN: %s\n", mysql_error(conn));
+        return;
+    }
+
+    res = mysql_store_result(conn);
+    if (!res) {
+        printf("No hay resultados.\n");
+        return;
+    }
+
+    int num_fields = mysql_num_fields(res);
+    MYSQL_FIELD *fields = mysql_fetch_fields(res);
+
+    // Encabezados
+    for (int i = 0; i < num_fields; i++) {
+        printf("%-15s", fields[i].name);
+    }
+    printf("\n");
+    printf("==========================================================================\n");
+
+    // Filas
+    while ((row = mysql_fetch_row(res)) != NULL) {
+        for (int i = 0; i < num_fields; i++) {
+            printf("%-15s", row[i] ? row[i] : "NULL");
+        }
+        printf("\n");
+    }
+
+    mysql_free_result(res);
+}
 
 void menu() {
     int opc;
@@ -325,7 +368,8 @@ void menu() {
         printf("6. Agregar agencia\n");
         printf("7. Agregar garaje\n");
         printf("8. Mostrar tabla\n");
-        printf("9. Salir\n");
+        printf("9. Mostrar reservas con JOIN\n");  // <--- NUEVA OPCIÓN
+        printf("10. Salir\n");
         printf("============================\n");
         printf("Opción: ");
         scanf("%d", &opc);
@@ -340,11 +384,13 @@ void menu() {
             case 6: agregarAgencia(); break;
             case 7: agregarGaraje(); break;
             case 8: mostrarTabla(); break;
-            case 9: printf("Saliendo...\n"); break;
+            case 9: mostrarReservasConJoin(); break; // <--- NUEVA OPCIÓN
+            case 10: printf("Saliendo...\n"); break;
             default: printf("Opción inválida.\n");
         }
-    } while (opc != 9);
+    } while (opc != 10);
 }
+
 
 int main() {
     conectarBD();
